@@ -5,26 +5,13 @@ admin.initializeApp();
 
 
 //call functions with HTTPS request
-exports.date = functions.https.onRequest((req, res) => {
-   const data=req.body
-   if(!data){
-     res.status(400).json({ message: "You send nothing"})
-   }else{
-     res.status(200).json({
-       data
-     })
-   }
+exports.httpsrequest = functions.https.onRequest((req, res) => {
+   res.send("hello from the server");
 });
 
-//call functions from your app
-exports.addMessage = functions.https.onCall((data, context) => {
-    // Message text passed from the client.
-    const text = data.text;
-    // Authentication / user information is automatically added to the request.
-      const uid = context.auth.uid;
-      //return responce
-      res.send(text);
-
+// https call function
+exports.httpscallfunction = functions.https.onCall((data, context) => {
+  return "hello this is https callable functions";
 });
 
 //shedule functions
@@ -33,39 +20,29 @@ exports.scheduledFunction = functions.pubsub.schedule('every 10 minutes').onRun(
   return null;
 });
 
-//cloud firestore functions
-
-//when document created
+// firestore functions
 exports.createUser = functions.firestore
-    .document('document id')
+    .document('/{collection}/{id}')
     .onCreate((snap, context) => {
 
-      const newValue = snap.data();
-      
-      res.send(data);
-    });
+      const data=snap.data();
+      const collection=context.params.collection;
+      const id=context.params.id;
 
-//update data
-    exports.updateUser = functions.firestore
-    .document('users/{userId}')
-    .onUpdate((change, context) => {
+      const activities=admin.firestore().collection('activities');
 
-      const newValue = change.after.data();
+      if(collection==='users'){
+        return activities.add({ text: "new user added"});
+      }
+      return null;
+});
 
-      const previousValue = change.before.data();
+//authetication function trigger
 
-      res.send();
+exports.newUserSignup=functions.auth.user().onCreate(user=>{
+  console.log('user created', user.email, user.uid);
+});
 
-      // perform desired operations ...
-    });
-//write document
-    exports.modifyUser = functions.firestore
-    .document('users/{userID}')
-    .onWrite((change, context) => {
-
-      const document = change.after.exists ? change.after.data() : null;
-      const oldDocument = change.before.data();
-
-      // perform operations ...
-      res.send();
-    });
+exports.userDeleted=functions.auth.user().onDelete(user=>{
+  console.log('user deleted', user.email, user.uid);
+});
